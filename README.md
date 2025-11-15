@@ -1,629 +1,516 @@
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Manajemen Alat Rumah Sakit</title>
+    <title>Dashboard - Hospital CMMS</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .modal {
-            display: none;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
+            color: white;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 2rem;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+        .nav-item {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+        .nav-item:hover {
+            background: rgba(255,255,255,0.1);
+            border-left-color: white;
+        }
+        .nav-item.active {
+            background: rgba(255,255,255,0.2);
+            border-left-color: #fbbf24;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .loading {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            overflow-y: auto;
-        }
-        .modal.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
-        .notification {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            padding: 1rem 1.5rem;
-            border-radius: 0.5rem;
-            color: white;
-            z-index: 2000;
+            background: rgba(0,0,0,0.7);
             display: none;
-            animation: slideIn 0.3s ease;
-        }
-        .notification.active {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .notification.success {
-            background: #10b981;
-        }
-        .notification.error {
-            background: #ef4444;
-        }
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        .qr-code {
-            width: 80px;
-            height: 80px;
-            border: 3px solid #1f2937;
-            display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3rem;
-            background: white;
-            border-radius: 0.5rem;
+            z-index: 9999;
+        }
+        .loading.active {
+            display: flex;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-    
-    <!-- Notification -->
-    <div id="notification" class="notification">
-        <span id="notificationIcon">✓</span>
-        <span id="notificationText"></span>
+<body>
+    <!-- Loading -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
     </div>
 
-    <div class="container mx-auto px-4 py-8">
-        <!-- Header -->
-        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">Sistem Manajemen Alat Rumah Sakit</h1>
-            <p class="text-gray-600">Kelola alat medis dengan sistem QR Code</p>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="p-6 border-b border-blue-700">
+            <h1 class="text-2xl font-bold">🏥 Hospital CMMS</h1>
+            <p class="text-blue-200 text-sm mt-1">Professional Edition</p>
         </div>
 
-        <!-- Add Button -->
-        <button onclick="openAddModal()" class="w-full bg-blue-600 text-white py-4 rounded-xl hover:bg-blue-700 font-semibold flex items-center justify-center gap-2 shadow-lg mb-6">
-            <span style="font-size: 1.5rem;">+</span>
-            Tambah Alat Baru
-        </button>
+        <nav class="mt-4">
+            <a href="dashboard.html" class="nav-item active flex items-center gap-3">
+                <span class="text-xl">📊</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="admin.html" class="nav-item flex items-center gap-3">
+                <span class="text-xl">🔧</span>
+                <span>Equipment</span>
+            </a>
+            <a href="work-order.html" class="nav-item flex items-center gap-3">
+                <span class="text-xl">📋</span>
+                <span>Work Orders</span>
+            </a>
+            <a href="pm-schedule.html" class="nav-item flex items-center gap-3">
+                <span class="text-xl">📅</span>
+                <span>PM Schedules</span>
+            </a>
+            <a href="reports.html" class="nav-item flex items-center gap-3">
+                <span class="text-xl">📈</span>
+                <span>Reports</span>
+            </a>
+            <a href="user.html" class="nav-item flex items-center gap-3">
+                <span class="text-xl">👤</span>
+                <span>User Panel</span>
+            </a>
+        </nav>
 
-        <!-- Search -->
-        <div class="mb-6">
-            <input 
-                type="text" 
-                id="searchInput" 
-                placeholder="Cari alat, SN, atau ruangan..." 
-                class="w-full pl-12 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-white shadow"
-                oninput="filterEquipment()"
-            >
-        </div>
-
-        <!-- Equipment Grid -->
-        <div id="equipmentGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Equipment cards will be inserted here -->
-        </div>
-
-        <!-- Empty State -->
-        <div id="emptyState" class="text-center py-16 hidden">
-            <p class="text-gray-500 text-lg">Belum ada alat. Tambahkan alat pertama Anda!</p>
-        </div>
-    </div>
-
-    <!-- Modal Add Equipment -->
-    <div id="addModal" class="modal">
-        <div class="bg-white rounded-lg p-6 w-full max-w-md">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-800">Tambah Alat Baru</h2>
-                <button onclick="closeModal('addModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-            </div>
-            <div class="space-y-4">
-                <input type="text" id="namaAlat" placeholder="Nama Alat" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-                <input type="text" id="typeAlat" placeholder="Type Alat" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-                <input type="text" id="snAlat" placeholder="Serial Number (SN)" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-                <input type="text" id="ruangan" placeholder="Ruangan" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-            </div>
-            <button onclick="addEquipment()" class="w-full mt-6 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold">
-                Simpan
-            </button>
-        </div>
-    </div>
-
-    <!-- Modal Kalibrasi -->
-    <div id="kalibrasiModal" class="modal">
-        <div class="bg-white rounded-lg p-6 w-full max-w-md">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-800">Kalibrasi</h2>
-                <button onclick="closeModal('kalibrasiModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-            </div>
-            <div id="kalibrasiEquipmentInfo" class="mb-4 p-3 bg-gray-100 rounded text-sm"></div>
-            <div class="space-y-4">
-                <input type="text" id="kalNamaPerusahaan" placeholder="Nama Perusahaan" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-                <select id="kalLaikPakai" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-                    <option value="laik">Laik Pakai</option>
-                    <option value="tidak_laik">Tidak Laik Pakai</option>
-                </select>
-                <input type="date" id="kalTanggal" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-                <input type="text" id="kalTeknisi" placeholder="Nama Teknisi" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-            </div>
-            <button onclick="saveKalibrasi()" class="w-full mt-6 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-semibold">
-                Simpan Kalibrasi
-            </button>
-        </div>
-    </div>
-
-    <!-- Modal Perbaikan -->
-    <div id="perbaikanModal" class="modal">
-        <div class="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-800">Perbaikan & Pemeliharaan</h2>
-                <button onclick="closeModal('perbaikanModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-            </div>
-            <div id="perbaikanEquipmentInfo" class="mb-4 p-3 bg-gray-100 rounded text-sm"></div>
-            <div class="space-y-4">
-                <input type="text" id="perbNamaPerusahaan" placeholder="Nama Perusahaan" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-                <select id="perbJenis" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" onchange="togglePerbaikanFields()">
-                    <option value="perbaikan">Perbaikan</option>
-                    <option value="pemeliharaan">Pemeliharaan</option>
-                </select>
-                <textarea id="perbPenyebab" placeholder="Penyebab" rows="3" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
-                <input type="text" id="perbTeknisi" placeholder="Nama Teknisi" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-                <select id="perbStatus" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-                    <option value="ya">Sudah Diperbaiki</option>
-                    <option value="tidak">Belum Diperbaiki</option>
-                </select>
-                <textarea id="perbTroubleshooting" placeholder="Troubleshooting" rows="3" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
-            </div>
-            <button onclick="savePerbaikan()" class="w-full mt-6 bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 font-semibold">
-                Simpan Data
-            </button>
-        </div>
-    </div>
-
-    <!-- Modal Laporan -->
-    <div id="laporanModal" class="modal">
-        <div class="bg-white rounded-lg p-6 w-full max-w-md">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-800">Laporan</h2>
-                <button onclick="closeModal('laporanModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-            </div>
-            <div id="laporanEquipmentInfo" class="mb-4 p-3 bg-gray-100 rounded text-sm"></div>
-            <div class="space-y-4">
-                <input type="text" id="lapNamaPelapor" placeholder="Nama Pelapor" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-                <textarea id="lapIsiLaporan" placeholder="Isi Laporan" rows="4" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
-            </div>
-            <button onclick="saveLaporan()" class="w-full mt-6 bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 font-semibold">
-                Kirim Laporan ke PIC
-            </button>
-        </div>
-    </div>
-
-    <!-- Modal Record -->
-    <div id="recordModal" class="modal">
-        <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-800">Record History</h2>
-                <button onclick="closeModal('recordModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-            </div>
-            <div id="recordEquipmentInfo" class="mb-4 p-3 bg-gray-100 rounded text-sm"></div>
-            <div id="recordList" class="space-y-4"></div>
-        </div>
-    </div>
-
-    <!-- Modal Delete Confirm -->
-    <div id="deleteModal" class="modal">
-        <div class="bg-white rounded-lg p-6 w-full max-w-md">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="p-3 bg-red-100 rounded-full">
-                    <span class="text-red-600 text-2xl">🗑️</span>
+        <div class="absolute bottom-0 w-full p-4 border-t border-blue-700">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-full bg-blue-300 flex items-center justify-center font-bold text-blue-900">
+                    <span id="userInitial">A</span>
                 </div>
-                <h2 class="text-xl font-bold text-gray-800">Hapus Alat</h2>
+                <div class="flex-1">
+                    <p class="text-sm font-semibold" id="userName">Admin</p>
+                    <p class="text-xs text-blue-200" id="userRole">Administrator</p>
+                </div>
             </div>
-            <p class="text-gray-700 mb-2">Apakah Anda yakin ingin menghapus alat ini?</p>
-            <div id="deleteEquipmentInfo" class="bg-gray-100 rounded p-3 mb-6"></div>
-            <div class="flex gap-3">
-                <button onclick="closeModal('deleteModal')" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold">
-                    Batal
-                </button>
-                <button onclick="confirmDelete()" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold">
-                    Hapus
-                </button>
+            <button onclick="logout()" class="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg text-sm font-semibold">
+                Logout
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Dashboard</h1>
+                <p class="text-gray-600 mt-1">Welcome back! Here's your overview</p>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-gray-600">Last Updated</p>
+                <p class="text-lg font-semibold text-gray-800" id="lastUpdated">-</p>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Equipment -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-gray-600 text-sm">Total Equipment</p>
+                        <h3 class="text-3xl font-bold text-gray-800" id="totalEquipment">0</h3>
+                    </div>
+                    <div class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
+                        <span class="text-3xl">🔧</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="text-green-600 font-semibold">↑ 12%</span>
+                    <span class="text-gray-600">vs last month</span>
+                </div>
+            </div>
+
+            <!-- Active Work Orders -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-gray-600 text-sm">Active Work Orders</p>
+                        <h3 class="text-3xl font-bold text-gray-800" id="activeWorkOrders">0</h3>
+                    </div>
+                    <div class="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center">
+                        <span class="text-3xl">📋</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="text-orange-600 font-semibold" id="pendingWO">0 Pending</span>
+                    <span class="text-gray-600">• </span>
+                    <span class="text-blue-600 font-semibold" id="inProgressWO">0 In Progress</span>
+                </div>
+            </div>
+
+            <!-- Maintenance This Month -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-gray-600 text-sm">Maintenance (Month)</p>
+                        <h3 class="text-3xl font-bold text-gray-800" id="maintenanceMonth">0</h3>
+                    </div>
+                    <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                        <span class="text-3xl">✅</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="text-green-600 font-semibold">On Track</span>
+                    <span class="text-gray-600">maintenance schedule</span>
+                </div>
+            </div>
+
+            <!-- Upcoming PM -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-gray-600 text-sm">Upcoming PM (7d)</p>
+                        <h3 class="text-3xl font-bold text-gray-800" id="upcomingPM">0</h3>
+                    </div>
+                    <div class="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center">
+                        <span class="text-3xl">📅</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="text-purple-600 font-semibold">Schedule Review</span>
+                    <span class="text-gray-600">needed</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Equipment Status Chart -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Equipment by Status</h3>
+                <canvas id="equipmentStatusChart"></canvas>
+            </div>
+
+            <!-- Work Orders Trend -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Work Orders by Priority</h3>
+                <canvas id="workOrdersChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Recent Maintenance Activity</h3>
+            <div id="recentActivity" class="space-y-3">
+                <!-- Activity items will be inserted here -->
             </div>
         </div>
     </div>
 
     <script>
-        let equipment = [];
-        let currentEquipmentId = null;
-        let equipmentToDelete = null;
+        const API_URL = 'http://localhost:3000/api';
+        let token = localStorage.getItem('token');
+        let currentUser = null;
 
-        // Load data from localStorage
-        function loadData() {
-            const data = localStorage.getItem('hospital_equipment');
-            if (data) {
-                equipment = JSON.parse(data);
+        // Check authentication
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        // Parse JWT to get user info
+        function parseJWT(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
             }
-            renderEquipment();
         }
 
-        // Save data to localStorage
-        function saveData() {
-            localStorage.setItem('hospital_equipment', JSON.stringify(equipment));
+        currentUser = parseJWT(token);
+        if (currentUser) {
+            document.getElementById('userName').textContent = currentUser.username;
+            document.getElementById('userRole').textContent = currentUser.role;
+            document.getElementById('userInitial').textContent = currentUser.username.charAt(0).toUpperCase();
         }
 
-        // Show notification
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            const notificationText = document.getElementById('notificationText');
-            const notificationIcon = document.getElementById('notificationIcon');
-            
-            notification.className = `notification ${type} active`;
-            notificationText.textContent = message;
-            notificationIcon.textContent = type === 'success' ? '✓' : '✕';
-            
-            setTimeout(() => {
-                notification.classList.remove('active');
-            }, 3000);
+        // Show/Hide loading
+        function showLoading() {
+            document.getElementById('loading').classList.add('active');
         }
 
-        // Open/Close Modal
-        function openModal(modalId) {
-            document.getElementById(modalId).classList.add('active');
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('active');
         }
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-            currentEquipmentId = null;
-        }
-
-        function openAddModal() {
-            document.getElementById('namaAlat').value = '';
-            document.getElementById('typeAlat').value = '';
-            document.getElementById('snAlat').value = '';
-            document.getElementById('ruangan').value = '';
-            openModal('addModal');
-        }
-
-        // Add Equipment
-        function addEquipment() {
-            const namaAlat = document.getElementById('namaAlat').value.trim();
-            const typeAlat = document.getElementById('typeAlat').value.trim();
-            const snAlat = document.getElementById('snAlat').value.trim();
-            const ruangan = document.getElementById('ruangan').value.trim();
-
-            if (!namaAlat || !typeAlat || !snAlat || !ruangan) {
-                showNotification('Mohon lengkapi semua field', 'error');
-                return;
-            }
-
-            const newEquipment = {
-                id: Date.now().toString(),
-                namaAlat,
-                typeAlat,
-                snAlat,
-                ruangan,
-                records: [],
-                createdAt: new Date().toISOString()
+        // Fetch with auth
+        async function fetchWithAuth(url, options = {}) {
+            const defaultOptions = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                }
             };
-
-            equipment.push(newEquipment);
-            saveData();
-            renderEquipment();
-            closeModal('addModal');
-            showNotification('Alat berhasil ditambahkan');
+            return fetch(url, { ...options, ...defaultOptions });
         }
 
-        // Open Kalibrasi Modal
-        function openKalibrasiModal(equipmentId) {
-            currentEquipmentId = equipmentId;
-            const eq = equipment.find(e => e.id === equipmentId);
-            
-            document.getElementById('kalibrasiEquipmentInfo').innerHTML = `
-                <p class="text-gray-600">Alat: <span class="font-semibold">${eq.namaAlat}</span></p>
-                <p class="text-gray-600">SN: ${eq.snAlat}</p>
-            `;
-            
-            document.getElementById('kalNamaPerusahaan').value = '';
-            document.getElementById('kalLaikPakai').value = 'laik';
-            document.getElementById('kalTanggal').value = '';
-            document.getElementById('kalTeknisi').value = '';
-            
-            openModal('kalibrasiModal');
-        }
-
-        // Save Kalibrasi
-        function saveKalibrasi() {
-            const namaPerusahaan = document.getElementById('kalNamaPerusahaan').value.trim();
-            const laikPakai = document.getElementById('kalLaikPakai').value;
-            const tanggal = document.getElementById('kalTanggal').value;
-            const teknisi = document.getElementById('kalTeknisi').value.trim();
-
-            if (!namaPerusahaan || !tanggal || !teknisi) {
-                showNotification('Mohon lengkapi semua field', 'error');
-                return;
+        // Load dashboard data
+        async function loadDashboard() {
+            showLoading();
+            try {
+                const response = await fetchWithAuth(`${API_URL}/dashboard/stats`);
+                if (!response.ok) throw new Error('Failed to load dashboard');
+                
+                const stats = await response.json();
+                
+                // Update stats cards
+                document.getElementById('totalEquipment').textContent = stats.totalEquipment || 0;
+                document.getElementById('maintenanceMonth').textContent = stats.maintenanceThisMonth || 0;
+                document.getElementById('upcomingPM').textContent = stats.upcomingPM || 0;
+                
+                // Calculate work orders
+                const woByStatus = stats.workOrdersByStatus || [];
+                let totalActive = 0;
+                let pending = 0;
+                let inProgress = 0;
+                
+                woByStatus.forEach(wo => {
+                    if (wo.status === 'pending') pending = wo.count;
+                    if (wo.status === 'in_progress') inProgress = wo.count;
+                    if (wo.status !== 'completed') totalActive += wo.count;
+                });
+                
+                document.getElementById('activeWorkOrders').textContent = totalActive;
+                document.getElementById('pendingWO').textContent = `${pending} Pending`;
+                document.getElementById('inProgressWO').textContent = `${inProgress} In Progress`;
+                
+                // Update charts
+                updateEquipmentChart(stats.equipmentByStatus || []);
+                updateWorkOrdersChart(stats.workOrdersByStatus || []);
+                
+                // Load recent activity
+                await loadRecentActivity();
+                
+                // Update timestamp
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString('id-ID');
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            } finally {
+                hideLoading();
             }
-
-            const record = {
-                id: Date.now().toString(),
-                type: 'kalibrasi',
-                namaPerusahaan,
-                laikPakai,
-                tanggalPengerjaan: tanggal,
-                teknisi,
-                timestamp: new Date().toISOString()
-            };
-
-            const eq = equipment.find(e => e.id === currentEquipmentId);
-            eq.records.push(record);
-            saveData();
-            renderEquipment();
-            closeModal('kalibrasiModal');
-            showNotification('Data kalibrasi berhasil disimpan');
         }
 
-        // Open Perbaikan Modal
-        function openPerbaikanModal(equipmentId) {
-            currentEquipmentId = equipmentId;
-            const eq = equipment.find(e => e.id === equipmentId);
+        // Update Equipment Status Chart
+        function updateEquipmentChart(data) {
+            const ctx = document.getElementById('equipmentStatusChart').getContext('2d');
             
-            document.getElementById('perbaikanEquipmentInfo').innerHTML = `
-                <p class="text-gray-600">Alat: <span class="font-semibold">${eq.namaAlat}</span></p>
-                <p class="text-gray-600">SN: ${eq.snAlat}</p>
-            `;
+            const labels = data.map(d => {
+                if (d.status === 'operational') return 'Operational';
+                if (d.status === 'maintenance') return 'Under Maintenance';
+                if (d.status === 'broken') return 'Broken';
+                return d.status;
+            });
             
-            document.getElementById('perbNamaPerusahaan').value = '';
-            document.getElementById('perbJenis').value = 'perbaikan';
-            document.getElementById('perbPenyebab').value = '';
-            document.getElementById('perbTeknisi').value = '';
-            document.getElementById('perbStatus').value = 'ya';
-            document.getElementById('perbTroubleshooting').value = '';
+            const values = data.map(d => d.count);
             
-            togglePerbaikanFields();
-            openModal('perbaikanModal');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: [
+                            '#10b981',
+                            '#f59e0b',
+                            '#ef4444'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
         }
 
-        function togglePerbaikanFields() {
-            const jenis = document.getElementById('perbJenis').value;
-            const statusField = document.getElementById('perbStatus');
-            statusField.style.display = jenis === 'perbaikan' ? 'block' : 'none';
+        // Update Work Orders Chart
+        function updateWorkOrdersChart(data) {
+            const ctx = document.getElementById('workOrdersChart').getContext('2d');
+            
+            const labels = data.map(d => {
+                if (d.status === 'pending') return 'Pending';
+                if (d.status === 'in_progress') return 'In Progress';
+                if (d.status === 'completed') return 'Completed';
+                return d.status;
+            });
+            
+            const values = data.map(d => d.count);
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Work Orders',
+                        data: values,
+                        backgroundColor: [
+                            '#f59e0b',
+                            '#3b82f6',
+                            '#10b981'
+                        ],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
         }
 
-        // Save Perbaikan
-        function savePerbaikan() {
-            const namaPerusahaan = document.getElementById('perbNamaPerusahaan').value.trim();
-            const jenis = document.getElementById('perbJenis').value;
-            const penyebab = document.getElementById('perbPenyebab').value.trim();
-            const teknisi = document.getElementById('perbTeknisi').value.trim();
-            const sudahDiperbaiki = document.getElementById('perbStatus').value;
-            const troubleshooting = document.getElementById('perbTroubleshooting').value.trim();
-
-            if (!namaPerusahaan || !penyebab || !teknisi || !troubleshooting) {
-                showNotification('Mohon lengkapi semua field', 'error');
-                return;
-            }
-
-            const record = {
-                id: Date.now().toString(),
-                type: 'perbaikan_pemeliharaan',
-                namaPerusahaan,
-                jenis,
-                penyebab,
-                teknisi,
-                sudahDiperbaiki: jenis === 'perbaikan' ? sudahDiperbaiki : null,
-                troubleshooting,
-                timestamp: new Date().toISOString()
-            };
-
-            const eq = equipment.find(e => e.id === currentEquipmentId);
-            eq.records.push(record);
-            saveData();
-            renderEquipment();
-            closeModal('perbaikanModal');
-            showNotification('Data perbaikan/pemeliharaan berhasil disimpan');
-        }
-
-        // Open Laporan Modal
-        function openLaporanModal(equipmentId) {
-            currentEquipmentId = equipmentId;
-            const eq = equipment.find(e => e.id === equipmentId);
-            
-            document.getElementById('laporanEquipmentInfo').innerHTML = `
-                <p class="text-gray-600">Alat: <span class="font-semibold">${eq.namaAlat}</span></p>
-                <p class="text-gray-600">SN: ${eq.snAlat}</p>
-            `;
-            
-            document.getElementById('lapNamaPelapor').value = '';
-            document.getElementById('lapIsiLaporan').value = '';
-            
-            openModal('laporanModal');
-        }
-
-        // Save Laporan
-        function saveLaporan() {
-            const namaPelapor = document.getElementById('lapNamaPelapor').value.trim();
-            const laporan = document.getElementById('lapIsiLaporan').value.trim();
-
-            if (!namaPelapor || !laporan) {
-                showNotification('Mohon lengkapi semua field', 'error');
-                return;
-            }
-
-            const record = {
-                id: Date.now().toString(),
-                type: 'laporan',
-                namaPelapor,
-                laporan,
-                timestamp: new Date().toISOString()
-            };
-
-            const eq = equipment.find(e => e.id === currentEquipmentId);
-            eq.records.push(record);
-            saveData();
-            renderEquipment();
-            closeModal('laporanModal');
-            showNotification('Laporan telah dikirim ke PIC Elektromedis');
-        }
-
-        // Open Record Modal
-        function openRecordModal(equipmentId) {
-            const eq = equipment.find(e => e.id === equipmentId);
-            
-            document.getElementById('recordEquipmentInfo').innerHTML = `
-                <p class="text-gray-600">Alat: <span class="font-semibold">${eq.namaAlat}</span></p>
-                <p class="text-gray-600">SN: ${eq.snAlat}</p>
-                <p class="text-gray-600">Ruangan: ${eq.ruangan}</p>
-            `;
-            
-            const recordList = document.getElementById('recordList');
-            
-            if (eq.records.length === 0) {
-                recordList.innerHTML = '<p class="text-center text-gray-500 py-8">Belum ada record</p>';
-            } else {
-                recordList.innerHTML = eq.records.map(record => {
-                    const date = new Date(record.timestamp).toLocaleDateString('id-ID', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
+        // Load recent activity
+        async function loadRecentActivity() {
+            try {
+                const response = await fetchWithAuth(`${API_URL}/reports/maintenance?limit=5`);
+                if (!response.ok) throw new Error('Failed to load activity');
+                
+                const records = await response.json();
+                const container = document.getElementById('recentActivity');
+                
+                if (records.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-4">No recent activity</p>';
+                    return;
+                }
+                
+                container.innerHTML = records.slice(0, 5).map(record => {
+                    const data = JSON.parse(record.data);
+                    const date = new Date(record.timestamp).toLocaleString('id-ID');
                     
-                    let badgeClass = '';
-                    let badgeText = '';
-                    let details = '';
+                    let icon = '📋';
+                    let bgColor = 'bg-blue-100';
+                    let textColor = 'text-blue-800';
                     
                     if (record.type === 'kalibrasi') {
-                        badgeClass = 'bg-green-100 text-green-800';
-                        badgeText = 'Kalibrasi';
-                        details = `
-                            <p><span class="font-semibold">Perusahaan:</span> ${record.namaPerusahaan}</p>
-                            <p><span class="font-semibold">Status:</span> ${record.laikPakai === 'laik' ? 'Laik Pakai' : 'Tidak Laik Pakai'}</p>
-                            <p><span class="font-semibold">Tanggal:</span> ${record.tanggalPengerjaan}</p>
-                            <p><span class="font-semibold">Teknisi:</span> ${record.teknisi}</p>
-                        `;
+                        icon = '✅';
+                        bgColor = 'bg-green-100';
+                        textColor = 'text-green-800';
                     } else if (record.type === 'perbaikan_pemeliharaan') {
-                        badgeClass = 'bg-orange-100 text-orange-800';
-                        badgeText = 'Perbaikan/Pemeliharaan';
-                        details = `
-                            <p><span class="font-semibold">Perusahaan:</span> ${record.namaPerusahaan}</p>
-                            <p><span class="font-semibold">Jenis:</span> ${record.jenis === 'perbaikan' ? 'Perbaikan' : 'Pemeliharaan'}</p>
-                            <p><span class="font-semibold">Penyebab:</span> ${record.penyebab}</p>
-                            <p><span class="font-semibold">Teknisi:</span> ${record.teknisi}</p>
-                            ${record.jenis === 'perbaikan' ? `<p><span class="font-semibold">Status:</span> ${record.sudahDiperbaiki === 'ya' ? 'Sudah Diperbaiki' : 'Belum Diperbaiki'}</p>` : ''}
-                            <p><span class="font-semibold">Troubleshooting:</span> ${record.troubleshooting}</p>
-                        `;
-                    } else {
-                        badgeClass = 'bg-red-100 text-red-800';
-                        badgeText = 'Laporan';
-                        details = `
-                            <p><span class="font-semibold">Pelapor:</span> ${record.namaPelapor}</p>
-                            <p><span class="font-semibold">Laporan:</span> ${record.laporan}</p>
-                        `;
+                        icon = '🔧';
+                        bgColor = 'bg-orange-100';
+                        textColor = 'text-orange-800';
                     }
                     
                     return `
-                        <div class="border rounded-lg p-4">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="px-3 py-1 rounded-full text-xs font-semibold ${badgeClass}">${badgeText}</span>
-                                <span class="text-xs text-gray-500">${date}</span>
+                        <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                            <div class="w-12 h-12 rounded-full ${bgColor} flex items-center justify-center text-2xl">
+                                ${icon}
                             </div>
-                            <div class="space-y-1 text-sm">${details}</div>
+                            <div class="flex-1">
+                                <p class="font-semibold text-gray-800">${record.namaAlat}</p>
+                                <p class="text-sm text-gray-600">SN: ${record.snAlat} • ${date}</p>
+                                <p class="text-sm ${textColor} mt-1">${record.performedBy || 'Unknown'}</p>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold ${bgColor} ${textColor}">
+                                ${record.type === 'kalibrasi' ? 'Kalibrasi' : 'Perbaikan'}
+                            </span>
                         </div>
                     `;
                 }).join('');
+                
+            } catch (error) {
+                console.error('Error loading activity:', error);
             }
-            
-            openModal('recordModal');
         }
 
-        // Delete Equipment
-        function openDeleteModal(equipmentId) {
-            equipmentToDelete = equipmentId;
-            const eq = equipment.find(e => e.id === equipmentId);
-            
-            document.getElementById('deleteEquipmentInfo').innerHTML = `
-                <p class="font-semibold text-gray-800">${eq.namaAlat}</p>
-                <p class="text-sm text-gray-600">SN: ${eq.snAlat}</p>
-                <p class="text-sm text-gray-600">Ruangan: ${eq.ruangan}</p>
-                <p class="text-sm text-red-600 mt-2">⚠️ Semua record akan ikut terhapus (${eq.records.length} record)</p>
-            `;
-            
-            openModal('deleteModal');
-        }
-
-        function confirmDelete() {
-            equipment = equipment.filter(e => e.id !== equipmentToDelete);
-            saveData();
-            renderEquipment();
-            closeModal('deleteModal');
-            showNotification('Alat berhasil dihapus');
-            equipmentToDelete = null;
-        }
-
-        // Filter Equipment
-        function filterEquipment() {
-            renderEquipment();
-        }
-
-        // Render Equipment
-        function renderEquipment() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = equipment.filter(eq => 
-                eq.namaAlat.toLowerCase().includes(searchTerm) ||
-                eq.snAlat.toLowerCase().includes(searchTerm) ||
-                eq.ruangan.toLowerCase().includes(searchTerm)
-            );
-
-            const grid = document.getElementById('equipmentGrid');
-            const emptyState = document.getElementById('emptyState');
-
-            if (filtered.length === 0) {
-                grid.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                return;
+        // Logout
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('token');
+                window.location.href = 'login.html';
             }
-
-            emptyState.classList.add('hidden');
-            grid.innerHTML = filtered.map(eq => `
-                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow relative">
-                    <button onclick="openDeleteModal('${eq.id}')" class="absolute top-4 right-4 text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Hapus Alat">
-                        🗑️
-                    </button>
-                    
-                    <div class="flex justify-between items-start mb-4 pr-8">
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-800">${eq.namaAlat}</h3>
-                            <p class="text-sm text-gray-600">Type: ${eq.typeAlat}</p>
-                            <p class="text-sm text-gray-600">SN: ${eq.snAlat}</p>
-                            <p class="text-sm text-gray-600">Ruangan: ${eq.ruangan}</p>
-                        </div>
-                        <div class="qr-code">⊞</div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-2 mt-4">
-                        <button onclick="openKalibrasiModal('${eq.id}')" class="bg-green-500 text-white py-2 px-3 rounded-lg hover:bg-green-600 text-sm font-semibold">
-                            Kalibrasi
-                        </button>
-                        <button onclick="openPerbaikanModal('${eq.id}')" class="bg-orange-500 text-white py-2 px-3 rounded-lg hover:bg-orange-600 text-sm font-semibold">
-                            Perbaikan
-                        </button>
-                        <button onclick="openLaporanModal('${eq.id}')" class="bg-red-500 text-white py-2 px-3 rounded-lg hover:bg-red-600 text-sm font-semibold">
-                            Laporan
-                        </button>
-                        <button onclick="openRecordModal('${eq.id}')" class="bg-blue-500 text-white py-2 px-3 rounded-lg hover:bg-blue-600 text-sm font-semibold">
-                            Record
-                        </button>
-                    </div>
-                    
-                    <div class="mt-3 text-xs text-gray-500 text-center">
-                        ${eq.records.length} record tersimpan
-                    </div>
-                </div>
-            `).join('');
         }
+
+        // Auto refresh every 5 minutes
+        setInterval(loadDashboard, 300000);
 
         // Initialize
-        loadData();
+        loadDashboard();
     </script>
 </body>
 </html>
